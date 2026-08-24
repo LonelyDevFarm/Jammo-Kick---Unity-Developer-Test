@@ -13,7 +13,7 @@ public sealed class BallController : MonoBehaviour
     public event Action<BallController> ReachedTarget;
 
     public bool TryKick(
-        Transform target,
+        GoalController target,
         float duration,
         float arcHeight)
     {
@@ -24,19 +24,20 @@ public sealed class BallController : MonoBehaviour
 
         IsAvailable = false;
         flightRoutine = StartCoroutine(
-            FlyToTarget(target.position, duration, arcHeight));
+            FlyToTarget(target, duration, arcHeight));
 
         return true;
     }
 
     private IEnumerator FlyToTarget(
-        Vector3 targetPosition,
+        GoalController target,
         float duration,
         float arcHeight)
     {
         Vector3 startPosition = transform.position;
-        duration = Mathf.Max(duration, 0.01f);
+        Vector3 targetPosition = target.TargetPosition;
 
+        duration = Mathf.Max(duration, 0.01f);
         float elapsedTime = 0f;
 
         while (elapsedTime < duration)
@@ -63,6 +64,7 @@ public sealed class BallController : MonoBehaviour
         transform.position = targetPosition;
         flightRoutine = null;
 
+        target.Celebrate();
         ReachedTarget?.Invoke(this);
     }
 

@@ -6,6 +6,7 @@ public sealed class GameUIController : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private PlayerKickController playerKickController;
+    [SerializeField] private CameraDirector cameraDirector;
     [SerializeField] private Button kickButton;
     [SerializeField] private Button autoKickButton;
     [SerializeField] private Button resetButton;
@@ -20,6 +21,7 @@ public sealed class GameUIController : MonoBehaviour
         }
 
         if (playerKickController == null ||
+            cameraDirector == null ||
             kickButton == null ||
             autoKickButton == null ||
             resetButton == null)
@@ -35,6 +37,9 @@ public sealed class GameUIController : MonoBehaviour
         playerKickController.KickAvailabilityChanged +=
             SetKickButtonVisible;
 
+        cameraDirector.FollowingBallChanged +=
+            SetKickSequenceActive;
+
         kickButton.onClick.AddListener(
             playerKickController.KickNearbyBall);
 
@@ -45,7 +50,7 @@ public sealed class GameUIController : MonoBehaviour
 
         isRegistered = true;
 
-        SetKickButtonVisible(playerKickController.CanKick);
+        SetKickSequenceActive(cameraDirector.IsFollowingBall);
     }
 
     private void OnDisable()
@@ -55,23 +60,50 @@ public sealed class GameUIController : MonoBehaviour
             return;
         }
 
-        playerKickController.KickAvailabilityChanged -=
-            SetKickButtonVisible;
+        if (playerKickController != null)
+        {
+            playerKickController.KickAvailabilityChanged -=
+                SetKickButtonVisible;
+        }
 
-        kickButton.onClick.RemoveListener(
-            playerKickController.KickNearbyBall);
+        if (cameraDirector != null)
+        {
+            cameraDirector.FollowingBallChanged -=
+                SetKickSequenceActive;
+        }
 
-        autoKickButton.onClick.RemoveListener(
-            playerKickController.AutoKick);
+        if (kickButton != null)
+        {
+            kickButton.onClick.RemoveListener(
+                playerKickController.KickNearbyBall);
+        }
 
-        resetButton.onClick.RemoveListener(ReloadScene);
+        if (autoKickButton != null)
+        {
+            autoKickButton.onClick.RemoveListener(
+                playerKickController.AutoKick);
+        }
+
+        if (resetButton != null)
+        {
+            resetButton.onClick.RemoveListener(ReloadScene);
+        }
 
         isRegistered = false;
     }
 
+    private void SetKickSequenceActive(bool isFollowingBall)
+    {
+        kickButton.interactable = !isFollowingBall;
+        autoKickButton.interactable = !isFollowingBall;
+
+        SetKickButtonVisible(playerKickController.CanKick);
+    }
+
     private void SetKickButtonVisible(bool isVisible)
     {
-        kickButton.gameObject.SetActive(isVisible);
+        kickButton.gameObject.SetActive(
+            isVisible && !cameraDirector.IsFollowingBall);
     }
 
     private static void ReloadScene()

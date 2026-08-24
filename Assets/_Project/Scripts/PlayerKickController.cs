@@ -5,7 +5,7 @@ public sealed class PlayerKickController : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private BallController[] balls;
-    [SerializeField] private Transform[] goalTargets;
+    [SerializeField] private GoalController[] goalTargets;
 
     [Header("Kick")]
     [SerializeField, Min(0f)] private float kickRange = 1.5f;
@@ -48,7 +48,7 @@ public sealed class PlayerKickController : MonoBehaviour
 
     private void Kick(BallController nearestBall)
     {
-        Transform goalTarget =
+        GoalController goalTarget =
             FindNearestGoal(nearestBall.transform.position);
 
         if (goalTarget == null)
@@ -146,9 +146,9 @@ public sealed class PlayerKickController : MonoBehaviour
         return result;
     }
 
-    private Transform FindNearestGoal(Vector3 ballPosition)
+    private GoalController FindNearestGoal(Vector3 ballPosition)
     {
-        Transform result = null;
+        GoalController result = null;
         float nearestSqrDistance = float.MaxValue;
 
         if (goalTargets == null)
@@ -158,7 +158,7 @@ public sealed class PlayerKickController : MonoBehaviour
 
         for (int i = 0; i < goalTargets.Length; i++)
         {
-            Transform goal = goalTargets[i];
+            GoalController goal = goalTargets[i];
 
             if (goal == null)
             {
@@ -166,7 +166,7 @@ public sealed class PlayerKickController : MonoBehaviour
             }
 
             float sqrDistance =
-                (goal.position - ballPosition).sqrMagnitude;
+                (goal.TargetPosition - ballPosition).sqrMagnitude;
 
             if (sqrDistance >= nearestSqrDistance)
             {
