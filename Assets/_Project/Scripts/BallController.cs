@@ -10,6 +10,8 @@ public sealed class BallController : MonoBehaviour
 
     public bool IsAvailable { get; private set; } = true;
 
+    public Vector3 TargetPosition { get; private set; }
+
     public event Action<BallController> ReachedTarget;
 
     public bool TryKick(
@@ -23,6 +25,7 @@ public sealed class BallController : MonoBehaviour
         }
 
         IsAvailable = false;
+        TargetPosition = target.TargetPosition;
         flightRoutine = StartCoroutine(
             FlyToTarget(target, duration, arcHeight));
 
@@ -35,7 +38,7 @@ public sealed class BallController : MonoBehaviour
         float arcHeight)
     {
         Vector3 startPosition = transform.position;
-        Vector3 targetPosition = target.TargetPosition;
+        Vector3 targetPosition = TargetPosition;
 
         duration = Mathf.Max(duration, 0.01f);
         float elapsedTime = 0f;

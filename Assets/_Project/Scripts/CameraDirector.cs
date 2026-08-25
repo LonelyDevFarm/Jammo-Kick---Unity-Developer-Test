@@ -2,16 +2,24 @@ using System;
 using System.Collections;
 using Cinemachine;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public sealed class CameraDirector : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private CinemachineVirtualCamera virtualCamera;
+    [FormerlySerializedAs("virtualCamera")]
+    [SerializeField] private CinemachineVirtualCamera playerCamera;
+    [SerializeField] private CinemachineVirtualCamera ballCamera;
     [SerializeField] private PlayerKickController kickController;
     [SerializeField] private Transform playerTarget;
+    [SerializeField] private Transform ballCameraRig;
+
+    [Header("Priority")]
+    [SerializeField] private int activePriority = 10;
+    [SerializeField] private int inactivePriority;
 
     [Header("Timing")]
-    [SerializeField, Min(0f)] private float returnDelay = 2f;
+    [SerializeField, Min(0f)] private float returnDelay = 1.2f;
 
     private BallController followedBall;
     private Coroutine returnRoutine;
@@ -28,9 +36,11 @@ public sealed class CameraDirector : MonoBehaviour
             return;
         }
 
-        if (virtualCamera == null ||
+        if (playerCamera == null ||
+            ballCamera == null ||
             kickController == null ||
-            playerTarget == null)
+            playerTarget == null ||
+            ballCameraRig == null)
         {
             Debug.LogError(
                 "CameraDirector is missing references.",
@@ -44,6 +54,16 @@ public sealed class CameraDirector : MonoBehaviour
         isRegistered = true;
 
         FollowPlayer();
+    }
+
+    private void LateUpdate()
+    {
+        if (followedBall == null)
+        {
+            return;
+        }
+
+        ballCameraRig.position = followedBall.transform.position;
     }
 
     private void OnDisable()
@@ -83,10 +103,35 @@ public sealed class CameraDirector : MonoBehaviour
         followedBall = ball;
         followedBall.ReachedTarget += HandleBallReachedTarget;
 
-        virtualCamera.Follow = ball.transform;
-        virtualCamera.LookAt = ball.transform;
+        PositionBallCameraRig(ball);
+
+        ballCamera.Follow = ballCameraRig;
+        ballCamera.LookAt = ballCameraRig;
+        ballCamera.PreviousStateIsValid = false;
+
+        playerCamera.Priority = inactivePriority;
+        ballCamera.Priority = activePriority;
 
         SetFollowingBall(true);
+    }
+
+    private void PositionBallCameraRig(BallController ball)
+    {
+        Vector3 direction =
+            ball.TargetPosition - ball.transform.position;
+
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude < 0.001f)
+        {
+            direction = Vector3.forward;
+        }
+
+        ballCameraRig.SetPositionAndRotation(
+            ball.transform.position,
+            Quaternion.LookRotation(
+                direction.normalized,
+                Vector3.up));
     }
 
     private void HandleBallReachedTarget(BallController ball)
@@ -95,6 +140,8 @@ public sealed class CameraDirector : MonoBehaviour
         {
             return;
         }
+
+        ballCameraRig.position = ball.transform.position;
 
         UnsubscribeFromBall();
         returnRoutine = StartCoroutine(ReturnToPlayer());
@@ -110,8 +157,11 @@ public sealed class CameraDirector : MonoBehaviour
 
     private void FollowPlayer()
     {
-        virtualCamera.Follow = playerTarget;
-        virtualCamera.LookAt = playerTarget;
+        playerCamera.Follow = playerTarget;
+        playerCamera.LookAt = playerTarget;
+
+        playerCamera.Priority = activePriority;
+        ballCamera.Priority = inactivePriority;
 
         SetFollowingBall(false);
     }
